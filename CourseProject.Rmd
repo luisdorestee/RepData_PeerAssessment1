@@ -1,0 +1,88 @@
+---
+title: "Course Project 1"
+author: "Luis Doreste"
+date: "2023-11-20"
+output: html_document
+---
+# Introduction
+
+This report explores the analysis of activity monitoring data from October and November 2012.
+
+## Loading and Preprocessing Data
+
+```{r load_data, echo=TRUE}
+setwd("C:/Users/User/Desktop/RStudio/datascience")
+# Load the data
+data <- read.csv("activity.csv")
+
+# Check the structure and summary of the data
+str(data)
+summary(data)
+```
+
+## Mean Total Number of Steps Taken per Day
+
+```{r mean total, echo=TRUE}
+# Calculate total number of steps per day
+total_steps_per_day <- aggregate(steps ~ date, data = data, FUN = sum, na.rm = TRUE)
+
+# Make a histogram of total steps per day
+hist(total_steps_per_day$steps, xlab = "Total Steps per Day", ylab = "Frequency", main = "Histogram of Total Steps per Day")
+
+# Calculate mean and median of total steps per day
+mean_total_steps <- mean(total_steps_per_day$steps)
+median_total_steps <- median(total_steps_per_day$steps)
+```
+
+## Average Daily Activity Pattern
+
+```{r average daily, echo=TRUE}
+# Calculate average steps for each interval across all days
+avg_steps_interval <- aggregate(steps ~ interval, data = data, FUN = mean, na.rm = TRUE)
+
+# Plotting time series of average steps per interval
+plot(avg_steps_interval$interval, avg_steps_interval$steps, type = "l", xlab = "5-Minute Interval", ylab = "Average Steps", main = "Average Daily Activity Pattern")
+
+# Find the interval with the maximum average steps
+max_interval <- avg_steps_interval$interval[which.max(avg_steps_interval$steps)]
+```
+
+## Imputing Missing Values
+
+```{r missing values, echo=TRUE}
+# Calculate total number of missing values
+total_missing_values <- sum(is.na(data$steps))
+
+# Fill missing values with mean or median for that interval or day
+# For example, using mean for the missing values
+data_imputed <- data
+data_imputed$steps[is.na(data_imputed$steps)] <- mean(data_imputed$steps, na.rm = TRUE)
+```
+
+## Differences in Acctivity Patterns between Weekdays and Weekends
+
+```{r final, echo=TRUE}
+# Recalculate total steps per day for imputed data
+total_steps_per_day_imputed <- aggregate(steps ~ date, data = data_imputed, FUN = sum)
+
+# Make a histogram and calculate mean and median for imputed data
+hist(total_steps_per_day_imputed$steps, xlab = "Total Steps per Day (Imputed)", ylab = "Frequency", main = "Histogram of Total Steps per Day (Imputed)")
+mean_total_steps_imputed <- mean(total_steps_per_day_imputed$steps)
+median_total_steps_imputed <- median(total_steps_per_day_imputed$steps)
+
+# Convert date column to a Date class
+data_imputed$date <- as.Date(data_imputed$date)
+
+# Create a new factor variable for weekdays and weekends
+data_imputed$day_type <- ifelse(weekdays(data_imputed$date) %in% c("Saturday", "Sunday"), "Weekend", "Weekday")
+
+# Aggregate data by interval and day type
+avg_steps_by_day_type <- aggregate(steps ~ interval + day_type, data = data_imputed, FUN = mean)
+
+# Plotting panel plot of average steps by day type
+library(ggplot2)
+ggplot(avg_steps_by_day_type, aes(x = interval, y = steps, group = day_type, color = day_type)) +
+  geom_line() +
+  labs(x = "5-Minute Interval", y = "Average Steps", title = "Average Steps by Time Interval and Day Type") +
+  facet_wrap(~day_type, nrow = 2)
+```
